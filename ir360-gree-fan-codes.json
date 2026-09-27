@@ -1,0 +1,33 @@
+{
+ "device": "IR-360 (Tasmota-IR 14.6.0, tasmota_C78A82)",
+ "remote": "格力风扇遥控",
+ "captured": "2026-09-27T11:32Z",
+ "note": "2026-09-27 实测修正：开关当时抓到两条波形，导致中间四键标签错位一格；模式键无作用已弃用。回放语法：IRSend 0,<raw>",
+ "codes": {
+  "开关": {
+   "hash": "0xABD4D16E",
+   "bits": 50,
+   "raw": "+1250-435Ab+485-1200+1280-410AbCdCdCd+480-1205G-1230Ab+460-7815AbAbJiA-440Al+455iMiMiM-1235Mi+1245lM-7820AlAlMiAlAlMiMiMiMiMnOlMpOlOlMiAlOlMiMiMiMiMiAlMpOlO"
+  },
+  "调速": {
+   "hash": "0xDA0AE878",
+   "bits": 24,
+   "raw": "+1280-405Ab+485-1200+1275-410EfCdCdC-1225+460-1230HiHi+1250-7025J-435J-440+455iJmJmNiNiHgNiNiNi+1245"
+  },
+  "摇头": {
+   "hash": "0xD8E4DC16",
+   "bits": 50,
+   "raw": "+1250-435Ab+460-1225Ab+1280-410+480-1200G-1230AbCi+455iJiJ-7820A-440AlJi+1245lMlJiJiMlJiJiJiJ-7830+1240lMlJiMlMlJiJiMlJiJiJiJkMlMlJiMlMlJiJiMlJiJiJiJkMlM"
+  },
+  "定时": {
+   "hash": "0x575183E6",
+   "bits": 50,
+   "raw": "+1305-380Ab+510-1175Ab+1280-410+485-1200GhG-1205+1270-435+460-1230LmL-7815+1250kOk+455mO-440OqPmPmPmOqPmPmP-7820OqO-465+430-1235+1245qOkPmPmPmOqPmPmPrVqVqLmOqVqPmPmPmVqPmPmPrVqV"
+  },
+  "模式(弃用)": {
+   "hash": "0xDB05A496",
+   "bits": 50,
+   "raw": "+1280-405Ab+485-1200AbAbCdCdCdC-1205+1275-435+460-1230H-7815+1250gKg+455iK-440KmLiLiLiLiKmLiL-7820+1245mKmLiOmOmLiLiLiLiOmLiL-7825OmOmLiOmOmLiLiLiL-1235+1240mLkGnOmO"
+  }
+ }
+}
