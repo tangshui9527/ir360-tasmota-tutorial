@@ -337,3 +337,50 @@ cd /tmp && nohup python3 -m http.server 8124 &
 | `ir360-backup.bin` | Win11 `C:\Users\tang\` | 原厂固件全量备份（1MB，勿删！） |
 | HA 配置 | armbian `/DATA/AppData/HomeAssistant/config/` | mqtt button 定义在 configuration.yaml |
 | mosquitto | armbian `/etc/mosquitto/conf.d/tasmota.conf` | 局域网匿名 broker |
+
+---
+
+## 后记：两大悬案当晚告破（20:30 复盘）
+
+刷机当天晚上对设备做了一次全面"体检 + 攻坚"，此前遗留的两个谜团全部找到真凶并修复：
+
+### 悬案一：串口"日志洪水"（已根治）
+
+**现象**：设备以 ~26 条/秒把自己串口收到的垃圾当命令解析，回 `Unknown`，并导致 Web 命令层失灵、MQTT 频繁断连重连（面板按钮偶尔要按两次）。
+
+**真凶**：这是一个**死亡螺旋**，机制如下——
+
+1. 出厂保存的 `SerialLog` 级别是 2，开机后串口 TX 不断输出日志；
+2. 板上 RX 线悬空（或与 TX 耦合），把 TX 的日志原样回收进 RX → 被解析成命令 → 产生更多日志输出；
+3. 洪水吃光 CPU → **MQTT 掉线**；
+4. **Tasmota 的隐藏行为：MQTT 断开时会动态把 SerialLog 恢复成"保存值"（2）**——这就是为什么每次 `SerialLog 0` 都在几秒内被打回原形（实测 `Active 2` 弹回）；
+5. TX 恢复输出 → 回环加速 → 无限循环。
+
+**修复（两行命令）**：
+```
+SerialLog 0
+SaveData 1
+```
+关键是 `SaveData 1` 让保存值本身变成 0——这样即使 MQTT 断线触发"恢复保存值"，恢复出来的也是 0，TX 永远静默，回环断粮。实测修复后 45 秒 0 噪音（修复前 26 条/秒），**重启后依然 0**，MQTT 开机一次连接零掉线（修复前 48 分钟重连 5 次）。
+
+### 悬案二：Web 命令接口 `/cm` 被掐（真相大白）
+
+**现象**：`/cm`、`/cs`、`/cn` 用 curl 访问时 TCP 连接秒断、连 HTTP 头都不回；但 Safari 浏览器一切正常。先后排除了模块、MQTT、洪水、请求方式等所有嫌疑。
+
+**真凶**：tasmota-ir 14.6.0 对 HTTP 命令接口做了 **CSRF 校验**——请求必须带 `Referer: http://<设备IP>/` 头，否则直接掐线。浏览器自动带 Referer 所以永远正常，curl/脚本裸请求必死。二分定位实测：
+
+| 请求头 | 结果 |
+|---|---|
+| 无头 / 仅 Origin / 仅 UA / 仅 X-Requested-With | ❌ 秒掐 |
+| **仅 `Referer: http://<设备IP>/`** | ✅ HTTP 200 |
+
+**修复/使用姿势**：
+```
+curl -H "Referer: http://192.168.31.29/" "http://192.168.31.29/cm?cmnd=Status%2011"
+```
+
+### 附加修复
+
+- HA 面板 4 个风扇按钮的 MQTT 发布加 `qos: 1`（配合 MQTT 稳定后基本消除"按了没反应"）
+- 设备友好名称改为「IR-360 红外桥」
+- 修复后设备 HTTP 命令接口完全可用，MQTT 与 Web 双通道健康

@@ -13,7 +13,7 @@
 | 红外发射脚 | **GPIO14**（GPIO12 实测无效） |
 | 红外接收脚 | **GPIO5** |
 | 模板 | `{"NAME":"IR-360","GPIO":[0,0,0,0,0,51,0,0,0,0,8,0,0],"FLAG":0,"BASE":18}` |
-| 命令通道 | MQTT → `cmnd/tasmota_C78A82/`（Web `/cm` 受串口自激洪水影响不可靠） |
+| 命令通道 | MQTT → `cmnd/tasmota_C78A82/`（Web `/cm` 需带 `Referer` 头，见后记） |
 
 ## 文件清单
 
@@ -37,6 +37,8 @@
 - 标准 `tasmota.bin` **不支持 RAW/Pronto 回放**，红外设备必选 `tasmota-ir` 变体
 - OTA 升级是**两段式**：先拉 `tasmota-minimal.bin.gz` 再拉完整版，本地 OTA 服务器目录必须两个都有
 - Tasmota 的 MQTT broker 配置在新版 HA 里必须走 config entry，不能写 yaml
+- **串口洪水根治法**：`SerialLog 0` + `SaveData 1`（MQTT 断开时 SerialLog 会动态恢复成保存值，必须把保存值本身改掉）
+- **tasmota-ir 14.6.0 的 `/cm` 有 CSRF 校验**：必须带 `Referer: http://<设备IP>/` 头，curl 裸请求会被秒掐
 
 ## 现状
 
