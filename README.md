@@ -21,6 +21,8 @@
 - **[ir360-backup.bin](./ir360-backup.bin)** — 原厂固件全量备份（1MB，E9 魔数已验证），随时可回刷
 - **[tasmota-ir-14.6.0.bin.gz](./tasmota-ir-14.6.0.bin.gz)** — 实际刷入的固件（Tasmota 官方发布包原样）
 - **[ir360-gree-fan-codes.json](./ir360-gree-fan-codes.json)** — 格力风扇遥控完整码库（开关/风速/摇头/定时 5 键，实测可回放）
+- **[ir360-gree-ac-yap0f-codes.json](./ir360-gree-ac-yap0f-codes.json)** — 格力空调 YAP0F 协议码库（18 键 RAW + 协议字典，非抓码、现场生成）
+- **[yap0f_send.py](./yap0f_send.py)** — YAP0F 帧生成器（零依赖，参数化生成任意 温度/模式/风速/扫风/睡眠/灯光 的 RAW 并直发 MQTT）
 
 ## 快速复现路线
 

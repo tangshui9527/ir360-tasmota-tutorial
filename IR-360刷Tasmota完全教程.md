@@ -334,6 +334,8 @@ cd /tmp && nohup python3 -m http.server 8124 &
 | 文件 | 位置 | 说明 |
 |---|---|---|
 | `ir360-gree-fan-codes.json` | 本仓库 | 格力风扇 5 键完整码库（raw 波形 + hash） |
+| `ir360-gree-ac-yap0f-codes.json` | 本仓库 | 格力空调 YAP0F 协议码库（18 键 RAW + 协议字典） |
+| `yap0f_send.py` | 本仓库 | YAP0F 帧生成器（零依赖，参数化生成 RAW 直发 MQTT） |
 | `ir360-backup.bin` | Win11 `C:\Users\tang\` | 原厂固件全量备份（1MB，勿删！） |
 | HA 配置 | armbian `/DATA/AppData/HomeAssistant/config/` | mqtt button 定义在 configuration.yaml |
 | mosquitto | armbian `/etc/mosquitto/conf.d/tasmota.conf` | 局域网匿名 broker |
@@ -384,3 +386,24 @@ curl -H "Referer: http://192.168.31.29/" "http://192.168.31.29/cm?cmnd=Status%20
 - HA 面板 4 个风扇按钮的 MQTT 发布加 `qos: 1`（配合 MQTT 稳定后基本消除"按了没反应"）
 - 设备友好名称改为「IR-360 红外桥」
 - 修复后设备 HTTP 命令接口完全可用，MQTT 与 Web 双通道健康
+
+
+---
+
+## 十、番外：格力空调红外（YAP0F 协议逆向，2026-10-02）
+
+风扇可以抓原装码，但这台格力空调（YAPOF10 遥控器）用的是格力**新一代 YAP0F 8 字节协议**，Tasmota 原生 `IRhvac` 只支持旧 24bit GREE 方言，发出去空调完全不认；且 IR-360 接收头疑似缺失抓不了码。最终走协议逆向：参考 ryanh7/esphome-custom-components 的 `gree_ext` 源码吃透协议，用零依赖 Python 现场生成 RAW 双帧直发，**实测空调秒响应**。
+
+### 协议要点
+- 每次发送 = **A 帧(0x50，尾 7300µs) + B 帧(0x70)紧连**，每帧 8 字节，引导 9000+4500µs，0=540µs / 1=1600µs / 间隔 620µs
+- 校验：`b7高4位 = ((b0..b3各低4位) + (b4..b6各高4位) + 0x0A) & 0x0F`
+- `b0` = mode(低3位) | power 0x08 | swing 0x40 | sleep 0x80 | fan(高4位)
+- `b1` = temp & 0x0F；`b2` = 0x20 灯光位；`b4` = bit0 上下扫风 / bit4 左右扫风；B 帧 `b6` 高4位重复 fan
+- FAN 六档：Auto 0x00 / Silent 0x10 / Low 0x20 / Medium 0x30 / High 0x40 / Max 0x50
+
+### 配套文件
+- `yap0f_send.py` — 生成器本体（无 pip 依赖，直接 socket 发 MQTT）
+- `ir360-gree-ac-yap0f-codes.json` — 18 个常用动作的成品 RAW（开机/关机/制冷/除湿/送风/睡眠/六档风速/双扫风开关/灯光开关）+ 协议字典，`mosquitto_pub -t cmnd/tasmota_C78A82/IRsend -m "<raw>"` 即可回放
+
+### HA 集成形态
+`script.gree_ac_ir_send`（mode: queued max:10）+ `input_text.ac_ir_state` 状态机 + mushroom 卡片 5 行 15 键；温度/风速/模式均为参数化生成而非固定码，比抓码回放更灵活（任意温度 16-30°C 任意组合）。
